@@ -1,0 +1,9 @@
+# Caddy front for the Moonsta Mini App (TLS is mandatory: Telegram only
+# opens web_app URLs over https). On the VPS:
+#   1. Point your domain's A record at the box.
+#   2. DOMAIN=app.example.com caddy run --config deploy/Caddyfile
+#   3. Set MINIAPP_URL=https://app.example.com in .env and restart the bot
+#      (it pins the menu button on startup).
+{$DOMAIN} {
+    reverse_proxy localhost:3000
+}

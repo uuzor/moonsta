@@ -1,0 +1,16 @@
+{
+  "name": "@sentinel/bot",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@sentinel/agent": "*",
+    "@sentinel/chain-solana": "*",
+    "@sentinel/config": "*",
+    "@sentinel/db": "*",
+    "@sentinel/policy": "*",
+    "@sentinel/queue": "*",
+    "grammy": "^1.36.0"
+  }
+}

@@ -1,0 +1,94 @@
+# Production stack: data + all three services on one box.
+# Data ports are NOT published — everything talks over the internal network.
+# Usage: docker compose -f docker-compose.prod.yml up -d --build
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: sentinel
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required in .env}
+      POSTGRES_DB: sentinel
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sentinel -d sentinel"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  app-bot:
+    build: .
+    command: ["npm", "run", "bot"]
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgres://sentinel:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required in .env}@postgres:5432/sentinel
+      REDIS_URL: redis://redis:6379
+      QUEUE_DRIVER: redis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  app-web:
+    build: .
+    command: ["npm", "run", "web"]
+    ports: ["127.0.0.1:3000:3000"]
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgres://sentinel:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required in .env}@postgres:5432/sentinel
+      REDIS_URL: redis://redis:6379
+      QUEUE_DRIVER: redis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  app-scheduler:
+    build: .
+    command: ["npm", "run", "scheduler"]
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgres://sentinel:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required in .env}@postgres:5432/sentinel
+      REDIS_URL: redis://redis:6379
+      QUEUE_DRIVER: redis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Dry-run by default (quotes + builds + simulates, never sends).
+  # Pass --live deliberately when real execution is wanted.
+  app-worker:
+    build: .
+    command: ["npm", "run", "worker", "--", "--interval-ms", "15000"]
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgres://sentinel:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required in .env}@postgres:5432/sentinel
+      REDIS_URL: redis://redis:6379
+      QUEUE_DRIVER: redis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata: {}

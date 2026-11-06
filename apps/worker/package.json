@@ -1,0 +1,16 @@
+{
+  "name": "@sentinel/worker",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@sentinel/config": "*",
+    "@sentinel/db": "*",
+    "@sentinel/portfolio": "*",
+    "@sentinel/policy": "*",
+    "@sentinel/rules": "*",
+    "@sentinel/chain-solana": "*",
+    "bullmq": "^6.7.0"
+  }
+}
